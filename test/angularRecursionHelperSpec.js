@@ -9,12 +9,16 @@ describe('RecursionHelper', function(){
 				family: '='
 			},
 			replace: true,
+			transclude: true,
 			template: '' +
 				'<div class="tree">' +
 				'	<p>{{ family.name }}</p>' +
+				'	<ng-transclude></ng-transclude>' +
 				'	<ul>' +
 				'		<li ng-repeat="child in family.children">' +
-				'			<tree family="child"></tree>' +
+				'			<tree family="child">' +
+				'				<ng-transclude></ng-transclude>' +
+				'			</tree>' +
 				'		</li>' +
 				'	</ul>' +
 				'</div>',
@@ -57,7 +61,7 @@ describe('RecursionHelper', function(){
     }));
 
 	function compileTree(){
-		parent = $compile('<tree family="treeFamily"></tree>')(scope);
+		parent = $compile('<tree family="treeFamily"><span class="child-count">Children: {{ family.children.length }}</span></tree>')(scope);
 		scope.$apply();
 	}
 
@@ -87,5 +91,22 @@ describe('RecursionHelper', function(){
 
 		compileTree();
 		expect(link).toHaveBeenCalled();
+	});
+
+	it('should render transcluded content correctly', function(){
+		link = jasmine.createSpy('post');
+
+		compileTree();
+
+		var childCount = parent.find('.child-count').first();
+		expect(childCount.text()).toBe('Children: 2');
+
+		var grandChildCount = parent.find('ul .child-count').first();
+		expect(grandChildCount.text()).toBe('Children: 3');
+
+		var grandChildren = scope.treeFamily.children[0].children;
+		grandChildren.push({ name: 'Grandchild4' });
+		scope.$apply();
+		expect(grandChildCount.text()).toBe('Children: 4');
 	});
 });
